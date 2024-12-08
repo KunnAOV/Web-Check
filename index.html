@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kiểm tra thông tin tệp XML</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(to right, #00c6ff, #0072ff);
+            color: #fff;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(10px);
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+        label {
+            display: block;
+            font-size: 14px;
+            margin-bottom: 5px;
+            color: #e0f7ff;
+        }
+        input[type="file"],
+        textarea,
+        button {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        input[type="file"] {
+            background: #fff;
+            color: #333;
+        }
+        textarea {
+            background: #fff;
+            color: #333;
+            resize: none;
+        }
+        button {
+            background: #0072ff;
+            color: #fff;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        button:hover {
+            background: #005bb5;
+        }
+        #output {
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 5px;
+            white-space: pre-wrap;
+            color: #e0f7ff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Kiểm tra thông tin trong tệp XML</h1>
+        <label for="zipFile">Chọn tệp ZIP:</label>
+        <input type="file" id="zipFile" accept=".zip">
+
+        <label for="searchText">Nhập nội dung muốn kiểm tra:</label>
+        <textarea id="searchText" placeholder="Nhập nội dung..."></textarea>
+
+        <button onclick="checkFiles()">Kiểm tra</button>
+
+        <h2>Kết quả:</h2>
+        <div id="output">Chưa có kết quả.</div>
+    </div>
+
+    <script>
+        async function checkFiles() {
+            const zipFile = document.getElementById('zipFile').files[0];
+            const searchText = document.getElementById('searchText').value.trim();
+            const output = document.getElementById('output');
+
+            if (!zipFile) {
+                alert("Vui lòng chọn tệp ZIP.");
+                return;
+            }
+
+            if (!searchText) {
+                alert("Vui lòng nhập nội dung muốn kiểm tra.");
+                return;
+            }
+
+            try {
+                const zipData = await zipFile.arrayBuffer();
+                const zip = await JSZip.loadAsync(zipData);
+                const matchedFiles = [];
+                const unmatchedFiles = [];
+
+                for (const fileName in zip.files) {
+                    const file = zip.files[fileName];
+                    if (!file.dir && fileName.endsWith('.xml')) {
+                        try {
+                            const content = await file.async("text");
+                            if (content.includes(searchText)) {
+                                matchedFiles.push(fileName);
+                            } else {
+                                unmatchedFiles.push(fileName);
+                            }
+                        } catch (error) {
+                            unmatchedFiles.push(fileName + " (Lỗi đọc UTF-8)");
+                        }
+                    }
+                }
+
+                output.innerText = `Nội dung: ${searchText}\n\n` +
+                    `File có thông tin:\n${matchedFiles.join('\n') || "Không có"}\n\n` +
+                    `File không có thông tin hoặc bị lỗi định dạng utf-8:\n${unmatchedFiles.join('\n') || "Không có"}`;
+            } catch (error) {
+                output.innerText = "Có lỗi xảy ra khi xử lý tệp ZIP: " + error.message;
+            }
+        }
+    </script>
+</body>
+</html>
